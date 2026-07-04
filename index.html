@@ -2,14 +2,14 @@
 <html lang="uk">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
-    <title>Dollar Clicker Pro</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no, maximum-scale=1.0">
+    <title>Dollar Clicker Mobile</title>
     <style>
         body {
             margin: 0; padding: 0; background: linear-gradient(135deg, #0b2516, #05110a);
             color: white; font-family: sans-serif; display: flex; flex-direction: column;
             align-items: center; justify-content: center; height: 100vh; overflow: hidden;
-            user-select: none; -webkit-user-select: none; position: relative;
+            user-select: none; -webkit-user-select: none; touch-action: manipulation; position: relative;
         }
         #score-container { font-size: 36px; font-weight: bold; margin-bottom: 25px; text-shadow: 0 0 15px rgba(46, 204, 113, 0.6); z-index: 10; }
         #coin-wrapper { position: relative; z-index: 5; }
@@ -19,15 +19,16 @@
             font-size: 100px; font-weight: bold; color: #1e5631; cursor: pointer;
             box-shadow: 0 12px 30px rgba(241, 196, 15, 0.5);
             transition: transform 0.05s ease; border: 6px solid #f9e79f;
+            -webkit-tap-highlight-color: transparent;
         }
         #coin:active { transform: scale(0.90); }
         .flying-item {
-            position: absolute; font-size: 30px; pointer-events: none;
+            position: absolute; font-size: 34px; pointer-events: none;
             animation: flyUp 0.8s ease-out forwards; z-index: 100;
         }
         @keyframes flyUp {
-            0% { transform: translate(-50%, -50%) scale(0.5); opacity: 1; }
-            100% { transform: translate(var(--x), var(--y)) scale(1.2); opacity: 0; }
+            0% { transform: translate(-50%, -50%) scale(0.6); opacity: 1; }
+            100% { transform: translate(var(--x), var(--y)) scale(1.3); opacity: 0; }
         }
     </style>
 </head>
@@ -40,84 +41,86 @@
     <script>
         let score = 0;
         let lastClickTime = Date.now();
-        let clickSpeed = 0; // Швидкість кліків
+        let clickSpeed = 0;
 
         const scoreDisplay = document.getElementById('score');
         const coin = document.getElementById('coin');
-        const wrapper = document.getElementById('coin-wrapper');
 
-        // Список предметів по рівнях дорожнечі
-        const itemsTier1 = ['🪙', '💵'];       // Базовий рівень
-        const itemsTier2 = ['💰', '💳'];       // Середній рівень
-        const itemsTier3 = ['👑', '💎', '🚀']; // Елітний рівень
+        const itemsTier1 = ['🪙', '💵'];       
+        const itemsTier2 = ['💰', '💳'];       
+        const itemsTier3 = ['👑', '💎', '🚀']; 
 
-        coin.addEventListener('click', (e) => {
+        // Функція обробки натискання (працює і на ПК, і на смартфонах)
+        function handleTap(e) {
+            e.preventDefault(); // Захист від подвійного зуму на смартфонах
+            
             const now = Date.now();
             const timeDiff = now - lastClickTime;
             lastClickTime = now;
 
-            // Збільшуємо швидкість кліків, якщо тапають швидко (менше 350мс між кліками)
             if (timeDiff < 350) {
                 clickSpeed = Math.min(clickSpeed + 1, 15);
             } else {
                 clickSpeed = Math.max(clickSpeed - 2, 0);
             }
 
-            // Визначаємо, який предмет вилетить і скільки очок дасть
             let selectedItem = '';
             let reward = 1;
 
             if (clickSpeed > 10) {
-                // Елітний рівень предметів
                 selectedItem = itemsTier3[Math.floor(Math.random() * itemsTier3.length)];
-                reward = 10; // Дає +10 доларів за тап!
+                reward = 10;
             } else if (clickSpeed > 4) {
-                // Середній рівень предметів
                 selectedItem = itemsTier2[Math.floor(Math.random() * itemsTier2.length)];
-                reward = 3;  // Дає +3 долари за тап
+                reward = 3;
             } else {
-                // Звичайний рівень
                 selectedItem = itemsTier1[Math.floor(Math.random() * itemsTier1.length)];
-                reward = 1;  // Дає +1 долар за тап
+                reward = 1;
             }
 
-            // Нараховуємо бали
             score += reward;
             scoreDisplay.textContent = score;
 
-            // Створюємо вилітаючий предмет
-            createFlyingItem(selectedItem, e.clientX, e.clientY);
-        });
+            // Визначаємо координати пальця або мишки
+            let clickX, clickY;
+            if (e.touches && e.touches.length > 0) {
+                clickX = e.touches[0].clientX;
+                clickY = e.touches[0].clientY;
+            } else {
+                clickX = e.clientX;
+                clickY = e.clientY;
+            }
 
-        function createFlyingItem(emoji, clickX, clickY) {
+            createFlyingItem(selectedItem, clickX, clickY);
+        }
+
+        // Слухаємо тапи пальцями та кліки мишкою
+        coin.addEventListener('touchstart', handleTap, { passive: false });
+        coin.addEventListener('click', handleTap);
+
+        unction createFlyingItem(emoji, x, y) {
             const item = document.createElement('div');
             item.className = 'flying-item';
             item.textContent = emoji;
 
-      // Визначаємо позицію кліку або центр монети для мобільних
-            const rect = coin.getBoundingClientRect();
-            const x = clickX ? clickX : (rect.left + rect.width / 2);
-            const y = clickY ? clickY : (rect.top + rect.height / 2);
+            // Якщо координати не зчиталися, беремо центр екрана
+            const finalX = x ? x : window.innerWidth / 2;
+            const finalY = y ? y : window.innerHeight / 2;
 
-            item.style.left = ${x}px;
-            item.style.top = ${y}px;
+            item.style.left = ${finalX}px;
+            item.style.top = ${finalY}px;
 
-            // Випадкова траєкторія вильоту (ліворуч/праворуч та вгору)
-            const randomX = (Math.random() - 0.5) * 200; // від -100px до +100px
-            const randomY = -150 - Math.random() * 150;  // від -150px до -300px вгору
+            const randomX = (Math.random() - 0.5) * 160; 
+            const randomY = -150 - Math.random() * 120;  
 
             item.style.setProperty('--x', ${randomX}px);
             item.style.setProperty('--y', ${randomY}px);
 
             document.body.appendChild(item);
 
-            // Видаляємо елемент після завершення анімації
-            setTimeout(() => {
-                item.remove();
-            }, 800);
+            setTimeout(() => { item.remove(); }, 800);
         }
 
-        // Поступове падіння швидкості, якщо користувач перестав клікати
         setInterval(() => {
             if (Date.now() - lastClickTime > 600) {
                 clickSpeed = Math.max(clickSpeed - 1, 0);
